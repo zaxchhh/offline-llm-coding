@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pixel Flappy Bird</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #70c5ce; font-family: monospace; overflow: hidden; }
+        #gameContainer { width: 400px; height: 600px; border: 4px solid #333; background-color: #70c5ce; position: relative; overflow: hidden; }
+        #bird { width: 30px; height: 30px; background-color: #ffeb3b; position: absolute; border: 2px solid #8a6d3b; border-radius: 5px; z-index: 10; }
+        .pipe { position: absolute; width: 40px; background-color: #74bf2e; border: 2px solid #38761d; }
+        #scoreBoard { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 24px; color: #fff; z-index: 100; text-shadow: 2px 2px #333; }
+        #gameOverScreen { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(0, 0, 0, 0.8); color: white; padding: 20px; border: 4px solid #ffeb3b; text-align: center; z-index: 200; }
+        button { background-color: #ffeb3b; border: none; padding: 10px 20px; margin-top: 15px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="gameContainer">
+        <div id="scoreBoard">Score: 0</div>
+        <div id="bird"></div>
+        <div id="gameOverScreen">
+            <h2>Game Over!</h2>
+            <p id="finalScore"></p>
+            <button onclick="resetGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const bird = document.getElementById('bird');
+        const scoreBoard = document.getElementById('scoreBoard');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const container = document.getElementById('gameContainer');
+
+        let birdY = 300, velocity = 0, score = 0, isPlaying = false, pipes = [];
+        const GRAVITY = 0.5, JUMP = -8;
+
+        document.addEventListener('keydown', (e) => { if (e.code === 'Space') jump(); });
+        container.addEventListener('click', jump);
+
+        function jump() {
+            if (!isPlaying) startGame();
+            velocity = JUMP;
+        }
+
+        function startGame() {
+            isPlaying = true;
+            birdY = 300; velocity = 0; score = 0;
+            pipes.forEach(p => { p.top.remove(); p.bottom.remove(); });
+            pipes = [];
+            gameOverScreen.style.display = 'none';
+            loop();
+        }
+
+        function loop() {
+            if (!isPlaying) return;
+            velocity += GRAVITY;
+            birdY += velocity;
+            bird.style.top = birdY + 'px';
+
+            if (birdY > 570 || birdY < 0) return endGame();
+
+            if (Math.random() < 0.02) createPipe();
+
+            pipes.forEach((p, i) => {
+                p.x -= 3;
+                p.top.style.left = p.x + 'px';
+                p.bottom.style.left = p.x + 'px';
+
+                if (p.x + 40 < 50 && !p.passed) { score++; p.passed = true; scoreBoard.innerText = 'Score: ' + score; }
+                
+                // Collision detection
+                if (p.x < 80 && p.x > 20 && (birdY < p.topHeight || birdY > p.topHeight + 150 - 30)) return endGame();
+                
+                if (p.x < -40) { p.top.remove(); p.bottom.remove(); pipes.splice(i, 1); }
+            });
+            requestAnimationFrame(loop);
+        }
+
+        function createPipe() {
+            let h = Math.random() * 300 + 50;
+            let top = document.createElement('div');
+            top.className = 'pipe'; top.style.height = h + 'px'; top.style.top = '0px'; top.style.left = '400px';
+            let bot = document.createElement('div');
+            bot.className = 'pipe'; bot.style.height = (600 - h - 150) + 'px'; bot.style.bottom = '0px'; bot.style.left = '400px';
+            container.appendChild(top); container.appendChild(bot);
+            pipes.push({ top, bottom: bot, x: 400, topHeight: h, passed: false });
+        }
+
+        function endGame() {
+            isPlaying = false;
+            document.getElementById('finalScore').innerText = 'Final Score: ' + score;
+            gameOverScreen.style.display = 'block';
+        }
+
+        function resetGame() { startGame(); }
+    </script>
+</body>
+</html>
